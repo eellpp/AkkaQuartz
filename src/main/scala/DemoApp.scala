@@ -1,3 +1,5 @@
+import Actors.MsgCounter
+import Messages.RecurringMessage
 import akka.actor.{Actor, Props, ActorSystem}
 import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
 
@@ -10,19 +12,14 @@ object DemoApp {
   }
 
   /*
-    MsgCounter is the actor to which the Quartz Scheduler sends a message every 2 seconds
+    Actors.MsgCounter is the actor to which the Quartz Scheduler sends a message every 2 seconds
    */
   def sendRecurringMessages = {
     val actor = system.actorOf(Props[MsgCounter])
     val q = QuartzSchedulerExtension(system)
-    q.schedule("EVERY2SECONDS",actor,"RecurringMessageTester")
+    q.schedule("EVERY2SECONDS",actor,RecurringMessage("ReccuringTester"))
     Thread sleep 20000
   }
 }
 
- class MsgCounter extends Actor {
-   var counter = 0
-    def receive = {
-      case name: String => println(s"Got Message $counter from $name"); counter +=  1;
-    }
-  }
+
