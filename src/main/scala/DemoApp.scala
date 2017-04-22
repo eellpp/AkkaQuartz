@@ -2,29 +2,30 @@ import java.util.concurrent.TimeUnit
 
 import Actors.MsgCounter
 import Messages.RecurringMessage
-import akka.actor.{Actor, Props, ActorSystem}
+import akka.actor.{ActorSystem, Props}
 import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
-
+import com.typesafe.config.ConfigFactory
+import scala.collection.JavaConversions._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
-
 object DemoApp {
 
   val system = ActorSystem("DemoApp")
   def main (args: Array[String]) {
-    sendRecurringMessages
-    Await.ready(system.whenTerminated, Duration(1, TimeUnit.MINUTES))
-//    system shutdown
+      getScheduleNames().foreach(sendRecurringMessages(_))
+      Await.ready(system.whenTerminated, Duration(1, TimeUnit.MINUTES))
   }
 
-  /*
-    Actors.MsgCounter is the actor to which the Quartz Scheduler sends a message every 2 seconds
-   */
-  def sendRecurringMessages = {
+  def sendRecurringMessages(schedule: String) = {
     val actor = system.actorOf(Props[MsgCounter])
-    val q = QuartzSchedulerExtension(system)
-    q.schedule("EVERY2SECONDS",actor,RecurringMessage("ReccuringTester"))
-//    Thread sleep 20000
+    QuartzSchedulerExtension(system)
+      .schedule(schedule,actor,RecurringMessage("ReccuringTester"))
+  }
+
+  def getScheduleNames() = {
+    val conf = ConfigFactory.load("quartz.conf")
+    val schedules = conf.getConfig("akka.quartz.schedules").entrySet()
+    schedules.map(schedule => schedule.getKey.split("\\.")(0)).toList.distinct
   }
 }
 
